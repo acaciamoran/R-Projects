@@ -1,0 +1,216 @@
+---
+title: "Systematic Sampling"
+author: "Ane"
+date: "October 30, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Load necessary packages first
+```{r}
+library(survey)
+```
+
+#Question 1
+
+```{r}
+#When you run the code below, a pop-up window will show
+#Get to the folder where the data is and select the data file
+#policy = read.csv(file.choose()) # New Policy
+policy = read.csv("")
+
+head(policy)
+```
+
+#1b
+
+```{r}
+#Get summary measures
+table(policy$FavorPolicy)
+nrow(policy)
+```
+
+
+#1c
+
+```{r}
+#Add a variable to the data set "policy" with the population size
+policy$N = 2000
+head(policy)
+
+#Specify sampling design
+sys_design <- svydesign(id = ~1, data = policy, fpc = ~N)
+
+#Which function will you use to obtain the estimator and its standard error? svymean or svytotal?
+svymean(~FavorPolicy, design = sys_design)
+
+#Find Confidence interval
+0.66 - 2*0.0319
+0.66 + 2*0.0319
+
+#####By hand
+N = 2000
+n = 200
+phat = 0.66
+SD_prop = sqrt((phat*(1-phat)/(n-1))*((N-n)/N))
+SD_prop
+```
+
+#Question 2
+Reading the data set
+
+```{r}
+#volume = read.csv(file.choose()) # Volume
+volume = read.csv("")
+
+head(volume)
+```
+
+#2a
+Create a scatterplot by filling in the code with the appropriate variables and labels
+
+```{r}
+plot(volume$Plot, volume$Volume, xlab = "Unit Element", ylab = "Volume")
+```
+
+#2c
+Use the nrow(), mean() and sd() functions to get the summary measures
+
+```{r}
+mean(volume$Volume)
+sd(volume$Volume)
+nrow(volume)
+```
+
+#2d
+```{r}
+#Add a variable to the data set "policy" with the population size
+volume$N = 520
+head(volume)
+
+#Specify sampling design
+sys_design <- svydesign(id = ~1, data = volume, fpc = ~N)
+
+#Which function will you use to obtain the estimator and its standard error? svymean or svytotal?
+svymean(~Volume, design = sys_design)
+
+#Find Confidence interval
+7038.1 - 2*54.368
+7038.1 + 2*54.368
+```
+
+#Question 3
+
+Reading the data set
+```{r}
+#d = read.csv(file.choose()) #  Temp
+d = read.csv("/Users/acaciamoran/Downloads/temp.csv")
+
+head(d)
+nrow(d)
+```
+
+#3a
+Create a scatterplot by filling in the code with the appropriate variables and labels
+
+```{r}
+plot(d$Id, d$T, xlab = "Element Number", ylab = "Temperature")
+```
+
+#3b
+Selecting a random number between 1 - 4
+Selecting a random number between 1 - X. Change X for the correct number.
+
+```{r}
+sample(1:4, 1,replace = FALSE)
+```
+
+Creating a subset of the dataset
+
+```{r}
+#Creating vector with the starting point and the next elements
+chosen = seq(from = 3, to = 80, by = 4)
+chosen
+
+#Creading a new subset of the data
+sys_sample = d[chosen, ]
+sys_sample
+```
+
+#3c
+Find estimator and its standard error
+```{r}
+sys_sample$N = 80
+sys_design <- svydesign(id = ~1, data = sys_sample, fpc = ~N)
+svymean(~T, design = sys_design)
+```
+
+#3d
+Selecting 4 random numbers between 1 - 16
+
+```{r}
+chosen_rep = sample(1:16, 4,replace = FALSE)
+chosen_rep
+```
+
+Creating vector with the 4 starting points and the next elements
+
+```{r}
+samp1 = seq(from = 6, to = 80, by = 16)
+samp2 = seq(from = 14, to = 80, by = 16)
+samp3 = seq(from = 1, to = 80, by = 16)
+samp4 = seq(from = 16, to = 80, by = 16)
+```
+
+#3e
+
+Getting summary measures:
+```{r}
+samp1_values = d[samp1, ]
+samp2_values = d[samp2, ]
+samp3_values = d[samp3, ]
+samp4_values = d[samp4, ]
+
+repeat_data = rbind(samp1_values, samp1_values, samp3_values, samp4_values)
+repeat_data
+
+repeat_data$sample = c(rep(1,5), rep(2,5), rep(3,5), rep(4,5))
+repeat_data
+
+mean = tapply(repeat_data$T,repeat_data$sample,mean)
+mean
+
+sd(mean)
+```
+
+
+Calculating estimator
+
+Create a formula in R to estimate the population mean in repeated systematic samples (see handout for the actual formula).
+
+
+```{r}
+ns = 4
+ybar_sys = sum(mean)/ns
+ybar_sys
+```
+
+
+Calculating variance of estimator
+
+Create a formula in R to estimate the variance of the estimator above in repeated systematic samples (see handout for the actual formula)
+
+```{r}
+N = 80
+n = 20
+var_sys = (1-n/N)*(sd(mean)^2)/ns
+var_sys
+```
+
+Calculating Confidence interval
+```{r}
+ybar_sys-2*sqrt(var_sys)
+ybar_sys+2*sqrt(var_sys)
+```
+

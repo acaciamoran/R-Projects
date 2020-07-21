@@ -1,0 +1,46 @@
+---
+title: "StratifiedRS"
+date: "October 28, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Activity 9 - Stratified Random Sample
+
+Reading the data set (sixthgrade.csv)
+
+```{r}
+#When you run the code below, a pop-up window will show
+#Get to the folder where the data is and select the SIXTGRADE file
+d = read.csv(file.choose()) 
+head(d)
+tail(d)
+nrow(d)
+```
+
+Question1: Creating a boxplot with groups
+
+```{r}
+library(ggplot2)
+qplot(d$TRACK, d$SCORES, geom="boxplot") +labs(x = "Track", y = "Scores")
+```
+
+
+Question 2:Finding summary measures
+
+```{r}
+#Following codes can help you look at mean and variance across stratum
+
+mean = tapply(d$SCORES,d$TRACK,mean)
+mean
+sd = tapply(d$SCORES,d$TRACK,sd)
+sd
+n = tapply(d$SCORES,d$TRACK,length)
+n
+```
+
+
+
+
+
