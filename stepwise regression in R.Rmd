@@ -1,0 +1,66 @@
+---
+title: "R in BUS 450 LAB 3"
+output:
+  html_document:
+    df_print: paged
+---
+
+PROBLEM 1
+```{r}
+#Lab 3 Bus 450
+library(tidyverse)
+library(ggthemes)
+library(ISLR)
+library(leaps)
+#1
+collegeclean <- read.csv("/Users/acaciamoran/Downloads/colleges_clean.csv")
+collegecleannew <- collegeclean[c(-1,-2,-3,-4)]
+head(collegeclean)
+```
+
+PROBLEM 2
+```{r}
+#2 Forward stepwise selection
+fwd=regsubsets(ADM_RATE~.,data=collegecleannew, nvmax = 8, method ="forward")
+reg.summary<-summary(fwd)
+summary(fwd)
+names(collegecleannew)
+reg.summary$adjr2
+which.max(reg.summary$adjr2)
+#this tells me the fourth ones is the best based on the r^2adj
+```
+PROBLEM 3
+```{r}
+#3 Backward stepwise selection
+bwd=regsubsets (ADM_RATE~.,data=collegecleannew , nvmax=8, method ="backward")
+summary (bwd)
+reg.summary2 <- summary(bwd)
+reg.summary2$adjr2
+which.max(reg.summary2$adjr2)
+#this tells me the second ones is the best based on the r^2adj
+
+```
+PROBLEM 4
+```{r}
+#4 Identify two best and use cross validation
+set.seed(1)
+train=sample(c(TRUE ,FALSE), nrow(collegecleannew),rep=TRUE)
+test=(!train)
+regfit.best=regsubsets (ADM_RATE~.,data=collegecleannew[train,], nvmax=8)
+test.mat=model.matrix(ADM_RATE~.,data=collegecleannew [test,])
+val.errors =rep(NA ,6)
+for(i in 1:6){
+  coefi=coef(regfit.best ,id=i)
+  pred=test.mat[,names(coefi)] %*% coefi
+  val.errors[i]=mean(( collegecleannew$ADM_RATE[test]-pred)^2)}
+
+val.errors
+which.min(val.errors)
+coef(regfit.best ,2)
+
+#this also tells us the one comparing problem 2 and 3 just based on r^2
+reg.summary$adjr2[4]
+reg.summary2$adjr2[2]
+
+```
+
