@@ -1,0 +1,757 @@
+---
+title: 'Homework Set 2 Acacia Moran'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+# PROBLEM 1
+```{r message=FALSE}
+library(readr)
+library(tidyr)
+library(fPortfolio)
+library(dplyr)
+DGS1 <- read_csv("/Users/acaciamoran/Downloads/DGS3MON.csv")
+SPY <- read_csv("/Users/acaciamoran/Downloads/SPY.csv")
+XLB <- read_csv("/Users/acaciamoran/Downloads/XLBNEW.csv")
+XLE <- read_csv("/Users/acaciamoran/Downloads/XLENEW.csv")
+XLF <- read_csv("/Users/acaciamoran/Downloads/XLFNEW.csv")
+XLI <- read_csv("/Users/acaciamoran/Downloads/XLINEW.csv")
+XLP <- read_csv("/Users/acaciamoran/Downloads/XLPNEW.csv")
+XLU <- read_csv("/Users/acaciamoran/Downloads/XLUNEW.csv")
+XLV <- read_csv("/Users/acaciamoran/Downloads/XLVNEW.csv")
+XLY <- read_csv("/Users/acaciamoran/Downloads/XLYNEW.csv")
+#this renames the date so we can merge
+DGS1<- DGS1 %>%
+  rename(Date=DATE)
+#this renames the close with the name of the sector
+XLE<- XLE %>%
+  rename(XLE=Close)
+XLB<- XLB %>%
+  rename(XLB=Close)
+XLF<- XLF %>%
+  rename(XLF=Close)
+XLI<- XLI %>%
+  rename(XLI=Close)
+XLP<- XLP %>%
+  rename(XLP=Close)
+XLU<- XLU %>%
+  rename(XLU=Close)
+XLV<- XLV %>%
+  rename(XLV=Close)
+XLY<- XLY %>%
+  rename(XLY=Close)
+SPY<- SPY %>%
+  rename(SPY=Close)
+
+#this columnbinds the sectors
+data <- cbind(XLE[,5],XLF[,5],XLV[,5],XLI[,5],XLB[,5],XLU[,5],XLP[,5],XLY[,5], SPY[,5])
+#this creates a empty dataframe for th sector data
+sector_returns <- data.frame(matrix(nrow = 1970, ncol = 9))
+names(sector_returns) <- names(data)
+#this takes the log
+for(j in 1:9){
+  for(i in 2:length(data[,1])){
+    sector_returns[i-1,j] <- log(data[i,j]/data[i-1,j])
+  }
+}
+
+#this adds the dates back in to merge
+XLE <- XLE[2:1971,]
+sectordata <- cbind(XLE[,1],sector_returns)
+#this mergers the DGS in with the sectors
+sectorclean<- merge(x=sectordata, y=DGS1, by="Date", all.x = TRUE )
+#this told us there were ones with .
+which(sectorclean[,11]== ".")
+#this fixes the "."
+for (i in 1:length(sectorclean$DGS3MO)){
+    if (sectorclean[i,11] == "."){
+  sectorclean[i,11] <- (as.numeric(sectorclean[i+1,11])+ as.numeric(sectorclean[i-1,11])/2)
+    }
+}
+#this fixes the risk-free
+sectorclean$DGS3MO <- (1 + as.numeric(sectorclean$DGS3MO))**(1/360) - 1
+```
+PART A
+```{r}
+#PART A
+energy <- as.numeric(sectorclean[,2]) - as.numeric(sectorclean[,11])
+financial <- as.numeric(sectorclean[,3]) - as.numeric(sectorclean[,11])
+health <- as.numeric(sectorclean[,4]) - as.numeric(sectorclean[,11])
+industrial <- as.numeric(sectorclean[,5]) - as.numeric(sectorclean[,11])
+materials <- as.numeric(sectorclean[,6]) - as.numeric(sectorclean[,11])
+utilities <- as.numeric(sectorclean[,7]) - as.numeric(sectorclean[,11])
+staples <- as.numeric(sectorclean[,8]) - as.numeric(sectorclean[,11])
+discretionary <- as.numeric(sectorclean[,9]) - as.numeric(sectorclean[,11])
+market <- as.numeric(sectorclean[,10]) - as.numeric(sectorclean[,11])
+
+
+e.model <- lm(energy ~ market)
+f.model <- lm(financial ~ market)
+h.model <- lm(health ~ market)
+i.model <- lm(industrial ~ market)
+m.model <- lm(materials ~ market)
+u.model <- lm(utilities ~ market)
+s.model <- lm(staples ~ market)
+d.model <- lm(discretionary ~ market)
+?lm
+coef(e.model)
+confint(e.model)
+coef(f.model)
+confint(f.model)
+coef(h.model)
+confint(h.model)
+coef(i.model)
+confint(i.model)
+coef(m.model)
+confint(m.model)
+coef(u.model)
+confint(u.model)
+coef(s.model)
+confint(s.model)
+coef(d.model)
+confint(d.model)
+```
+The confidence intervals are printed in the order ENERGY, FINANCIAL, HEALTH CARE, INDUSTRIAL, MATERIALS,UTILITIES, COMSUMER STAPLES, COMSUMER DISCRETIONARY
+
+PART B
+```{r}
+coef(e.model)
+confint(e.model)
+```
+
+For energy the intercept(ALPHA) confidence interval does not contains zero,and the slope(BETA) does not.Therefor we conclude that the alpha and beta for Energy are not zero.
+
+PART C
+```{r}
+plot(energy ~ market, pch=16)
+lines(market, fitted(e.model), col = "seagreen")
+abline(v=0, col="black")
+```
+This line is called CAPM.
+
+PART D
+The website gave different answers for alpha and beta, giving a lower alpha and higher beta. This makes sense because the website used monthly data and our data is daily.
+
+# QUESTION 2
+```{r}
+#2 2017
+problem2data <- sectorclean[, -c(4, 6, 9, 10,11)]
+datafor2017 <- problem2data[1:1508,]
+datafor2018<- problem2data[1:1759,]
+
+```
+Mean for 2017
+```{r}
+meanXLE17 <- mean(datafor2017$XLE)
+meanXLF17 <- mean(datafor2017$XLF)
+meanXLI17 <- mean(datafor2017$XLI)
+meanXLU17 <- mean(datafor2017$XLU)
+meanXLP17 <- mean(datafor2017$XLP)
+
+meanXLE17
+meanXLF17
+meanXLI17
+meanXLU17
+meanXLP17
+```
+
+Mean for 2018
+```{r}
+meanXLE18 <- mean(datafor2018$XLE)
+meanXLF18 <- mean(datafor2018$XLF)
+meanXLI18 <- mean(datafor2018$XLI)
+meanXLU18 <- mean(datafor2018$XLU)
+meanXLP18 <- mean(datafor2018$XLP)
+
+meanXLE18
+meanXLF18
+meanXLI18
+meanXLU18
+meanXLP18
+```
+sd for 2017
+```{r}
+sdXLE17 <- sd(datafor2017$XLE)
+sdXLF17 <- sd(datafor2017$XLF)
+sdXLI17 <- sd(datafor2017$XLI)
+sdXLU17 <- sd(datafor2017$XLU)
+sdXLP17 <- sd(datafor2017$XLP)
+
+sdXLE17
+sdXLF17
+sdXLI17
+sdXLU17
+sdXLP17
+```
+
+sd for 2018
+```{r}
+sdXLE18 <- sd(datafor2018$XLE)
+sdXLF18 <- sd(datafor2018$XLF)
+sdXLI18 <- sd(datafor2018$XLI)
+sdXLU18 <- sd(datafor2018$XLU)
+sdXLP18 <- sd(datafor2018$XLP)
+
+sdXLE18
+sdXLF18
+sdXLI18
+sdXLU18
+sdXLP18
+```
+Correlation Matrix for 2017
+```{r}
+forcorr2017 <- datafor2017[,-1]
+corr_matrix17 <- cor(forcorr2017)
+corr_matrix17
+
+```
+Correlation Matrix for 2018
+```{r}
+forcorr2018 <- datafor2018[,-1]
+corr_matrix18 <- cor(forcorr2018)
+corr_matrix18
+```
+The expected return were lower in 2018 and the standard deviation was higher in 2018. the correlation matix stayed relatively the same.
+
+PART B
+Minimum variance portfolio
+The calculated weights make sense because it gives higher weights to the sectors with lower sd and lower weights to the sectos with higher sd, meaning they are riskier.
+```{r}
+library(fPortfolio)
+library(timeSeries)
+time17<- timeSeries(data = as.matrix(forcorr2017))
+time18<- timeSeries(data =as.matrix(forcorr2018))
+minvariancePortfolio(data= time17, spec = portfolioSpec(), constraints = "LongOnly")
+minvariancePortfolio(data= time18, spec = portfolioSpec(), constraints = "LongOnly")
+```
+For 2018 when compared to 2017 the weights changed corresponding to the changes in the standard deviations. The ones that increason more in their standard deviation from 2017-2018 got their weight shifted to other sector and the ones that did not increase as much got the weight.
+
+PART C
+```{r}
+riskf <- ((1.01)^((1/360)))-1
+riskf
+spec_f <- 'setRiskFreeRate<-'(portfolioSpec(), riskf)
+tangencyPortfolio(time17, spec = spec_f, constraints = "LongOnly")
+tangencyPortfolio(time18, spec = spec_f, constraints = "LongOnly")
+```
+Here we see that in 2017 there is no weight in the XLE and in 2018 there is no weight in the XLI either. This makes sense because they had low expected returns and high variances which only got worse in 2018.
+
+PART D
+For this question I used WOLFRAMALPHA and gave it the equation:
+(.0005*x)+((1-x)*.000027)-(.5*2.66*(.0078^2)*(x^2))
+After that I found th partial derivative with respect to x and solved for the roots giving x to be about 2.99 which means that we will be shorting in the risk free asset. This is interesting because we invest all our money in the risky and short in the risk free.
+
+
+# QUESTION 3
+PART A
+.4
+ln(1.59x+1.53y+1.05(1-x-y)) +ln(1.1x+.42y+1.05(1-x-y))+ln(.61x+1.41y+1.05(1-x-y))
+ln(1.59x+1.53y+1.05-1.05x-1.05y) +ln(1.1x+.42y+1.05-1.05x-1.05y))+ln(.61x+1.41y+1.05-1.05x-1.05y))
+ln(.54x+.48y+1.05) +ln(.05x-.63y+1.05)+ln(-.44x+.36y+1.05)
+Than take the derivative and set equal to eachother
+(-12.6/(21 + x - 12.6 y) + 0.818182/(2.38636 - x + 0.818182 y) + 0.888889/(1.94444 + x + 0.888889 y))=(1/(21 + x - 12.6 y) - 1/(2.38636 - x + 0.818182 y) + 1/(1.94444 + x + 0.888889 y))
+using Wolfram Alpha we get one positive solution being
+The weights are 0.310651 in XYZ
+0.254598 in ABC
+.565249
+and finally 1-0.254598-0.310651 = 0.434751 in the Riskless
+
+PART B
+e^(1.59x+1.53y+1.05(1-x-y)) +e^(1.1x+.42y+1.05(1-x-y))+e^(.61x+1.41y+1.05(1-x-y))
+e^(.54x+.48y+1.05) +e^(.05x-.63y+1.05)+e^(-.44x+.36y+1.05)
+I took the partial dericative of a and y and set them equal to eachother.
+(-1.80032 e^(0.05 x - 0.63 y) + 1.02875 e^(-0.44 x + 0.36 y) + 1.37167 e^(0.54 x + 0.48 y))= (0.142883 e^(0.05 x - 0.63 y) - 1.25737 e^(-0.44 x + 0.36 y) + 1.54313 e^(0.54 x + 0.48 y))
+This gave the weights
+2.14154 in XYZ and 3.14289 in ABC and than short in the Riskless with -4.28443
+
+In part B we short because by using exponential we would invest in the company with the highest return so we would not invest in the riskless asset.In part A we dont short in any of the assets.
+
+
+# Question 4
+Part A
+```{r}
+Energy1 <- sectorclean$XLE
+m <- mean(Energy1)
+s <- sd(Energy1)
+m
+s
+head(Energy1)
+tail(Energy1)
+
+```
+Part B
+Here we see that the correlation between the estimated and actual prices is only .2, while the correlation between actual returns and the estimates returns in .07. 
+```{r}
+set.seed(1)
+rt <- m+(s*rnorm(211, 0, 1))
+prices <- NULL
+prices[1] <- data$XLE[1760]*exp(rt[1])
+for (i in 2:length(rt))(
+  prices[i]<- prices[i-1]*exp(rt[i])
+)
+plot(data$XLE[1760:1970], type = "l", col= "yellow", ylim= c(40, 80))
+lines(prices, col = "pink")
+cor(data$XLE[1761:1971], prices)
+cor(rt, sectorclean$XLE[1760:1970])
+
+
+```
+Part C
+```{r}
+regress <- lm(rt~Energy1[1760:1970])
+regress
+coef(regress)
+confint(regress)
+```
+
+Part D
+0 is contained in the confidence interval for alpha, while 1 is contained in the 95% confidence interval for beta. This is interesting because while we want alpha to be zero, which it could be based on our interval, but the beta does not contain 1 so it is not a great estimate.
+Part E
+```{r}
+residxle <- regress$residuals
+mean(residxle)
+sd(residxle)
+```
+Here we notice that the mean residual is really small and negative and the sd is pretty small as well. These means that the regression does a pretty good job of estimating the data.
+
+# Problem 5
+PART A
+```{r}
+mean2018 <- mean(sectorclean$XLE[1:1760])
+sd2018 <- sd(sectorclean$XLE[1:1760])
+mean2018
+sd2018
+```
+PART B
+```{r}
+set.seed(2)
+rt2 <- m+(s*rnorm(211, 0, 1))
+prices2 <- NULL
+prices2[1] <- data$XLE[1760]*exp(rt2[1])
+for (i in 2:length(rt2))(
+  prices2[i]<- prices2[i-1]*exp(rt2[i])
+)
+rt2
+prices2
+```
+
+PART C
+```{r}
+set.seed(2)
+nullx <- 200
+nullp <- data$XLE[1760]
+loan <- nullx*nullp/2
+t <- (1:length(prices2)/365)
+#rt5 <- ((1.08)^(1/365))-1
+#rt5 <- rep(rt5, times= 211)
+
+rt5<-.08
+tmarg <- ((prices2*nullx)-(loan*((1+rt5)^t)))/ (prices2*nullx)
+sum(tmarg<.3)
+mean(tmarg<.3)
+tmarg
+```
+Here we notice that none of the actual margins less are less than .3.This tells us that about 0% of the margins are below 30%.
+Part D
+```{r}
+set.seed(2)
+nullx <- 200
+nullp <- data$XLE[1760]
+loan <- nullx*nullp/2
+t <- (1:length(prices))/365
+prices3 <- NULL
+probe <- NULL
+first<- NULL
+rt5<-.08
+for (k in 1:50){
+  rt3 <- m+(s*rnorm(211, 0, 1))
+  prices3[1] <- data$XLE[1760]*exp(rt3[1])
+  for (i in 2:length(rt3))(
+       prices3[i]<- prices3[i-1]*exp(rt3[i]))
+tmarg3 <- ((prices3*nullx)-(loan*((1+rt5)^t)))/ (prices3*nullx)
+nullp <- data$XLE[1760]
+first[k] <- which(tmarg3<.3)[1]
+probe[k]<- mean(tmarg3<.3)
+}
+mean(probe)
+mean(first[which(first!="NA")])
+```
+Here we notice that the first day is 168.125.This tells us that about 0.16% of the days have a margin that is below 30%.
+# PROBLEM 6
+PART A
+```{r}
+principle<- 100000
+Ra<- .065
+m <- 12
+n<-15
+PMT<- principle*(Ra/m)*(1/(1-(1+(Ra/m))^(-n*m)))
+PMT
+interestamount = NULL
+mprinciple= NULL
+
+for(i in 1:180){
+interestamount[i] <- principle*Ra/12
+mprinciple[i] <- (PMT- interestamount[i])
+principle <- principle-mprinciple[i]}
+
+mprinciple
+fractioninterest <- mprinciple/PMT
+fractionmprinciple<- interestamount/PMT
+fractioninterest
+smallest <- abs(fractioninterest- fractionmprinciple)
+which(smallest ==min(smallest))
+
+plot(fractioninterest, xlab = "Months", ylab="Fraction of PMT", ylim = c(0,1), col= "seagreen", type='l')
+lines(fractionmprinciple, col= "yellow")
+legend("top", legend= c("mprincipal", "interest" ), pch = 16, col=c("seagreen", "yellow"))
+abline(v= which(smallest == min(smallest)))
+
+#here we get 53 months
+```
+
+Here we get 53 months
+
+PART B
+```{r}
+library(FinancialMath)
+NPV(cf0 = 0, cf=mprinciple, times=1:180, i=Ra/m, plot=F)
+```
+The discount rate
+$R_a/m= .065/12 = .00541 $
+The equation is 
+$Balance_i = Principal*(1+(R_a/m))^{s-1}-PMT*[(1+(R_a/m))^{s-1}-1]/(Ra/m)$
+$Total_i = Balance_i -Principle+(s-1)*PMT$
+$PV = \sum_{i=1}^{180}(Total_i/[1+(R_a/m)]^k$
+
+PART C
+```{r}
+#c
+t=.2
+NPV(cf0 = 0, cf=interestamount, times=1:180, i=((Ra/m)*(1-t)), plot=F)
+```
+Tax braket t= .2
+The discount rate
+$R_a/m*(1-t)= (.065/12)*(1-.2) = .00541(.8)=.004328 $
+The equation is 
+$Balance_i = Principal*(1+(R_a/m*(1-t)))^{s-1}-PMT*[(1+(R_a/m*(1-t)))^{s-1}-1]/(R_a/m*(1-t))$
+$Total_i = Balance_i -Principle+(s-1)*PMT$
+$PV = \sum_{i=1}^{180}(Total_i/1+(R_a/m*(1-t))]^k$
+
+PART D
+```{r}
+#d
+principle<- 100000
+Ra<- .065
+m <- 12
+n<-15
+PMT<- principle*(Ra/m)*(1/(1-(1+(Ra/m))^(-n*m)))
+t<- NULL
+s<- .01
+PMTt<-NULL
+for (i in 1:100){
+PMTt[i] <- PMT*((1+s/100)^i)}
+interestamountt = NULL
+mprinciplet= NULL
+PMTt[101:200] <- rep.int(PMTt[100], times =100)
+for(i in 1:179){
+  interestamountt[i] <- principle*(Ra/12)
+  mprinciplet[i] <- (PMTt[i]- interestamountt[i])
+  principle <- principle-mprinciplet[i]}
+principle
+#for month 179 your paying only $70.67
+#the maturity stays about the same the monthly payment in the last month is only 70.67 though
+#the interest total difference is 546.955
+sum(interestamount) -sum(interestamountt)
+
+```
+for month 179 your paying only $70.67
+the maturity stays about the same the monthly payment in the last month is only 70.67 though
+the interest total difference is 546.955
+
+PART E
+```{r}
+#e
+set.seed(1)
+principle<- 100000
+Ra<- .065
+m <- 12
+n<-15
+PMT<- principle*(Ra/m)*(1/(1-(1+(Ra/m))^(-n*m)))
+s<- .01
+interestamountt2 = NULL
+mprinciplet2= NULL
+PMTt2 =PMT*(1+runif(100,0,1))
+for(i in 1:98){
+  interestamountt2[i] <- principle*(Ra/12)
+  mprinciplet2[i] <- (PMTt2[i]- interestamountt2[i])
+  principle <- principle-mprinciplet2[i]}
+principle
+#for month 97 your paying only $949.68
+#the maturity decreases its about 8 years when the loan is paid off last month (98) is only $949.68
+#the interest total difference is 27827.59
+sum(interestamount) -sum(interestamountt2)
+```
+for month 97 your paying only $949.68
+the maturity decreases its about 8 years when the loan is paid off last month (98) is only $949.68
+the interest total difference is 27827.59
+
+PART F
+```{r}
+#f
+set.seed(1)
+principle<- 100000
+Ra<- .065
+m <- 12
+n<-15
+PMT<- principle*(Ra/m)*(1/(1-(1+(Ra/m))^(-n*m)))
+s<- .01
+interestamountt3 = NULL
+mprinciplet3= NULL
+PMTt3 =PMT*(1+(sample.int(6, size =100, replace=TRUE)/100))
+PMTt3[101:200] <- PMT
+PMTt3[100]
+for(i in 1:173){
+  interestamountt3[i] <- principle*(Ra/12)
+  mprinciplet3[i] <- (PMTt3[i]- interestamountt3[i])
+  principle <- principle-mprinciplet3[i]}
+principle
+#for month 173 your paying only $690.66
+#loan is paid off last month (173) is only $690.66
+#the interest total difference is 3147.179
+sum(interestamount) -sum(interestamountt3)
+
+```
+
+for month 173 your paying only $690.66
+loan is paid off last month (173) is only $690.66
+the interest total difference is 3147.179
+
+PART G
+```{r}
+#1g
+principle<- 100000
+Ra<- .065
+m <- 12
+n<-10
+PMT<- principle*(Ra/m)*(1/(1-(1+(Ra/m))^(-n*m)))
+PMT
+interestamount4 = NULL
+mprinciple4= NULL
+
+for(i in 1:120){
+  interestamount4[i] <- principle*Ra/12
+  mprinciple4[i] <- (PMT- interestamount4[i])
+  principle <- principle-mprinciple4[i]}
+part1 <- sum(interestamount4)
+part1
+#2g
+principle<-100000
+n<-10
+intro <- .065
+m<-12
+part2 <-principle*intro/m*m*n
+part2
+
+#3g
+principle<-100000
+n<-10
+intro <- .065
+m<-12
+
+mint <- NULL
+mprin <-NULL
+mintro <-NULL
+for (i in 1:(m*n)){
+  pay <- principle*(intro/m)*(1/(1-(1+(intro/m))^(-n*m)))*.1
+  mint[i] <- principle*(intro/m)
+  mintro[i]<-pay
+  principle<-principle+(mint[i]-mintro[i])}
+
+part3 <- sum(mintro)+ (principle-100000)
+part3
+```
+
+PART H
+```{r}
+#PART H
+ptnew <- 100000*((1.1)^10)
+ptt <- 100000
+
+for1 <- (ptnew-ptt-part1)/ptt
+for2<- (ptnew-ptt-part2)/ptt
+for3<- (ptnew-ptt-part3)/ptt
+(1+for1)^(1/10)-1
+(1+for2)^(1/10)-1
+(1+for3)^(1/10)-1
+```
+
+# PROBLEM 7
+PART A
+$\sigma_i^2 = \beta_i^2\sigma_{S\&P 500}^2 + \sigma_\epsilon^2$
+PART B
+```{r}
+sd500 <- .2
+beta <- .6
+esd<- .4
+
+varnew <- ((beta^2)*sd500^2)+ (esd^2)
+varnew
+
+((beta^2)*sd500^2)/varnew
+
+```
+
+PART  C
+```{r}
+betas <- c( .6, 1.25, 1.5)
+sigi<- c(.4,.5,.6)
+
+```
+PART 1
+```{r}
+sqrt((betas^2)*sd500^2)
+```
+PART 2
+```{r}
+sd500 <- .2
+((betas^2)*sd500^2)/(sigi^2)
+```
+PART 3
+```{r}
+betas[1]*betas[2]*(sd500^2)
+(betas[1]*betas[2]*(sd500^2))/(sigi[1]*sigi[2])
+betas[1]*betas[3]*(sd500^2)
+(betas[1]*betas[3]*(sd500^2))/(sigi[1]*sigi[3])
+betas[3]*betas[2]*(sd500^2)
+(betas[3]*betas[2]*(sd500^2))/(sigi[3]*sigi[2])
+
+```
+PART D
+```{r}
+weightsstock <- c(.3,.3,.4)
+betas <- c( .6, 1.25, 1.5)
+sigi<- c(.4,.5,.6)
+sd500 <- .2
+#part 1
+betaport <- sum(weightsstock*betas)
+sdp <- (betaport^2)*(sd500^2)+ sum((weightsstock^2)*(sigi^2))
+portsd <-sqrt(sdp)
+portsd
+#part2
+betaport
+#part 3
+sqrt((betaport^2)*sd500^2)
+#part 4
+((betaport^2)*sd500^2)/(portsd^2)
+
+
+```
+Part 5
+The more stocks you adds portfolio the lower the portfolio sd would get, so the higher the proportion of the common factor would be.
+
+# PROBLEM 8
+```{r}
+Energy1 <- sectorclean$XLE
+m <- mean(Energy1)
+s <- sd(Energy1)
+m
+s
+head(Energy1)
+tail(Energy1)
+
+```
+PART B
+Here we see that the correlation between the estimated and actual prices is only .651, while the correlation between actual returns and the estimates returns in .074. This changed from problem 4. They both got higher.
+```{r}
+set.seed(1)
+rt <- (m-.5*s)+(s*rnorm(211, 0, 1))
+prices <- NULL
+prices[1] <- data$XLE[1760]*exp(rt[1])
+for (i in 2:length(rt))(
+  prices[i]<- prices[i-1]*exp(rt[i])
+)
+plot(data$XLE[1760:1970], type = "l", col= "yellow", ylim= c(0, 80))
+lines(prices, col = "pink")
+cor(data$XLE[1761:1971], prices)
+cor(rt, sectorclean$XLE[1760:1970])
+```
+Here we notice that the graphs no longer cross each other and the prediction is no longer a good representation.
+
+PART C
+```{r}
+regress <- lm(rt~Energy1[1760:1970])
+regress
+coef(regress)
+confint(regress)
+```
+
+Part D
+0 is not contained in the confidence interval for alpha, while 1 is not contained in the 95% confidence interval for beta. This is interesting because while we want alpha to be zero, which it could not be based on our interval and we want betas interval to contain 1 so it is not a great estimate.
+PART E
+```{r}
+residxle <- regress$residuals
+mean(residxle)
+sd(residxle)
+```
+
+Here we notice that the mean residual is really really small and positive and the sd is pretty small as well. These means that the regression does a pretty good job of estimating the data.
+
+
+# QUESTION 9
+PART A
+```{r}
+mean2018 <- mean(sectorclean$XLE[1:1760])
+sd2018 <- sd(sectorclean$XLE[1:1760])
+mean2018
+sd2018
+```
+PART B
+```{r}
+set.seed(2)
+rt2 <- (m-.5*s)+(s*rnorm(211, 0, 1))
+prices2 <- NULL
+prices2[1] <- data$XLE[1760]*exp(rt2[1])
+for (i in 2:length(rt2))(
+  prices2[i]<- prices2[i-1]*exp(rt2[i])
+)
+rt2
+prices2
+```
+PART C
+```{r}
+nullx <- 200
+nullp <- data$XLE[1760]
+loan <- nullx*nullp/2
+t <- (1:length(prices2)/365)
+
+rt5<-.08
+tmarg <- ((prices2*nullx)-(loan*((1+rt5)^t)))/ (prices2*nullx)
+sum(tmarg<.3)
+mean(tmarg<.3)
+```
+PART D
+```{r}
+nullx <- 200
+nullp <- data$XLE[1760]
+loan <- nullx*nullp/2
+t <- (1:length(prices))/365
+prices3 <- NULL
+probe <- NULL
+first<- NULL
+rt5<-.08
+for (k in 1:50){
+  rt3 <- (m-.5*s)+(s*rnorm(211, 0, 1))
+  prices3[1] <- data$XLE[1760]*exp(rt3[1])
+  for (i in 2:length(rt3))(
+       prices3[i]<- prices3[i-1]*exp(rt3[i]))
+tmarg3 <- ((prices3*nullx)-(loan*((1+rt5)^t)))/ (prices3*nullx)
+nullp <- data$XLE[1760]
+first[k] <- which(tmarg3<.3)[1]
+probe[k]<- mean(tmarg3<.3)
+}
+mean(probe)
+mean(first[which(first!="NA")])
+```
+Here we see that in part A the mean and sd stayed the same, for part C we went from having 0 for the frequency and 0 for the probability to having 153 and .725 as the probability. In part D  the first day went from 168.125
+to 53.64 and the probability went from .16% to .7488%.
