@@ -1,9 +1,9 @@
-#Lab 4 Bus 450
+#Creating random forest and k nearest means
 #library(tidyverse)
 #library(ggthemes)
 #library(ISLR)
 #library(leaps)
-#1
+#This got the data and helped me clean it
 collegeclean <- read.csv("/Users/acaciamoran/Downloads/colleges_clean.csv")
 collegecleannew <- collegeclean[c(-1,-2,-3,-4)]
 head(collegecleannew)
@@ -34,6 +34,7 @@ test  = subset(collegecleannew, sample2 == FALSE)
 dim(train)
 dim(test)
 head(train)
+# this did a random forest
 rf <- randomForest(
   ADM_RATE ~ .,
   data=train)
@@ -41,7 +42,7 @@ print(rf)
 print(importance(fit,type = 2))
 pred = predict(rf, newdata=test)
 
-#knn
+#k nearest means
 sample23 = sample.split(collegecleannew$ADM_RATE, SplitRatio = .75)
 sample23
 traink = subset(collegecleannew, sample23 == TRUE)
